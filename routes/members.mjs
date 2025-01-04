@@ -1,19 +1,16 @@
 import express from "express";
 import db from "../db/conn.mjs";
 import { ObjectId } from "mongodb";
+import { verifyAdminToken } from "../middlewares/authMiddleware.mjs";
 
 const router = express.Router();
 
-// Helper function to validate member data
-const validateMemberData = (data) => {
-    if (!data.FullName || !data.Email || !data.StudentID) {
-        return false;
-    }
-    return true;
-};
+// ====================
+// Protected Routes (Admin Only)
+// ====================
 
 // Get all members
-router.get("/", async (req, res) => {
+router.get("/", verifyAdminToken, async (req, res) => {
     try {
         const collection = await db.collection("members");
         const results = await collection.find({}).toArray();
@@ -24,7 +21,7 @@ router.get("/", async (req, res) => {
 });
 
 // Get a member by ID
-router.get("/:id", async (req, res) => {
+router.get("/:id", verifyAdminToken, async (req, res) => {
     try {
         const collection = await db.collection("members");
         const member = await collection.findOne({ _id: new ObjectId(req.params.id) });
@@ -40,11 +37,11 @@ router.get("/:id", async (req, res) => {
 });
 
 // Add a new member
-router.post("/", async (req, res) => {
+router.post("/", verifyAdminToken, async (req, res) => {
     try {
         const newMember = req.body;
 
-        if (!validateMemberData(newMember)) {
+        if (!newMember.FullName || !newMember.Email || !newMember.StudentID) {
             return res.status(400).send({ message: "Invalid member data" });
         }
 
@@ -57,7 +54,7 @@ router.post("/", async (req, res) => {
 });
 
 // Update a member by ID
-router.patch("/:id", async (req, res) => {
+router.patch("/:id", verifyAdminToken, async (req, res) => {
     try {
         const query = { _id: new ObjectId(req.params.id) };
         const updates = { $set: req.body };
@@ -76,7 +73,7 @@ router.patch("/:id", async (req, res) => {
 });
 
 // Delete a member by ID
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", verifyAdminToken, async (req, res) => {
     try {
         const query = { _id: new ObjectId(req.params.id) };
 
