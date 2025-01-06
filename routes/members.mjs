@@ -41,7 +41,7 @@ router.post("/", verifyAdminToken, async (req, res) => {
     try {
         const newMember = req.body;
 
-        if (!newMember.FullName || !newMember.Email || !newMember.StudentID) {
+        if (!newMember.fullName || !newMember.email || !newMember.studentID) {
             return res.status(400).send({ message: "Invalid member data" });
         }
 
@@ -55,6 +55,7 @@ router.post("/", verifyAdminToken, async (req, res) => {
 
 // Update a member by ID
 router.patch("/:id", verifyAdminToken, async (req, res) => {
+
     try {
         const query = { _id: new ObjectId(req.params.id) };
         const updates = { $set: req.body };
