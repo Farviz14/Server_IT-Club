@@ -5,9 +5,7 @@ import { verifyAdminToken } from "../middlewares/authMiddleware.mjs";
 
 const router = express.Router();
 
-// ====================
-// Helper Functions for Validations
-// ====================
+
 
 // Validate Full Name (only letters, spaces, /, and - are allowed)
 const isValidFullName = (name) => /^[a-zA-Z\s/-]+$/.test(name);
@@ -21,7 +19,7 @@ const isValidStudentID = (id) => /^23[a-zA-Z0-9]{5}[a-zA-Z]$/.test(id);
 // Validate Email using Regex
 const isValidEmail = (email) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
 
-// Validate Singapore Phone Number (must be 8 digits)
+// Validate Singapore Phone Number (must start with 8 or 9 and be 8 digits)
 const isValidPhoneNumber = (number) => /^[89]\d{7}$/.test(number);
 
 // Check if Full Name already exists
@@ -34,9 +32,22 @@ const isNicknameExists = async (collection, nickname) => {
     return !!(await collection.findOne({ nickname }));
 };
 
-// ====================
-// Protected Routes (Admin Only)
-// ====================
+// Check if Student ID already exists
+const isStudentIDExists = async (collection, studentID) => {
+    return !!(await collection.findOne({ studentID }));
+};
+
+// Check if Email already exists
+const isEmailExists = async (collection, email) => {
+    return !!(await collection.findOne({ email }));
+};
+
+// Check if Phone Number already exists
+const isPhoneNumberExists = async (collection, phoneNumber) => {
+    return !!(await collection.findOne({ phoneNumber }));
+};
+
+
 
 // Get all members
 router.get("/", verifyAdminToken, async (req, res) => {
@@ -73,19 +84,19 @@ router.post("/", verifyAdminToken, async (req, res) => {
 
         // Validation Checks
         if (!isValidFullName(newMember.fullName)) {
-            return res.status(400).send({ message: "Full Name must contain only letters, spaces, /, and -." });
+            return res.status(400).send({ message: "Invalid characters in full name!" });
         }
         if (!isValidNickname(newMember.nickname)) {
-            return res.status(400).send({ message: "Nickname must contain only letters, spaces, /, and -." });
+            return res.status(400).send({ message: "Invalid characters in nickname!" });
         }
         if (!isValidStudentID(newMember.studentID)) {
-            return res.status(400).send({ message: "Student ID must have 8 characters, start with '23', and end with a letter." });
+            return res.status(400).send({ message: "Invalid Student ID format!" });
         }
         if (!isValidEmail(newMember.email)) {
-            return res.status(400).send({ message: "Invalid email format." });
+            return res.status(400).send({ message: "Invalid email format!" });
         }
         if (!isValidPhoneNumber(newMember.phoneNumber)) {
-            return res.status(400).send({ message: "Phone Number must be exactly 8 digits." });
+            return res.status(400).send({ message: "Invalid phone number!" });
         }
 
         // Uniqueness Checks
@@ -95,10 +106,13 @@ router.post("/", verifyAdminToken, async (req, res) => {
         if (await isNicknameExists(collection, newMember.nickname)) {
             return res.status(400).send({ message: "Nickname already exists." });
         }
-        if (await collection.findOne({ email: newMember.email })) {
+        if (await isStudentIDExists(collection, newMember.studentID)) {
+            return res.status(400).send({ message: "Student ID already exists." });
+        }
+        if (await isEmailExists(collection, newMember.email)) {
             return res.status(400).send({ message: "Email already exists." });
         }
-        if (await collection.findOne({ phoneNumber: newMember.phoneNumber })) {
+        if (await isPhoneNumberExists(collection, newMember.phoneNumber)) {
             return res.status(400).send({ message: "Phone Number already exists." });
         }
 
@@ -119,19 +133,19 @@ router.patch("/:id", verifyAdminToken, async (req, res) => {
 
         // Validation Checks
         if (updates.$set.fullName && !isValidFullName(updates.$set.fullName)) {
-            return res.status(400).send({ message: "Full Name must contain only letters, spaces, /, and -." });
+            return res.status(400).send({ message: "Invalid characters in full name!" });
         }
         if (updates.$set.nickname && !isValidNickname(updates.$set.nickname)) {
-            return res.status(400).send({ message: "Nickname must contain only letters, spaces, /, and -." });
+            return res.status(400).send({ message: "Invalid characters in nickname!" });
         }
         if (updates.$set.studentID && !isValidStudentID(updates.$set.studentID)) {
-            return res.status(400).send({ message: "Student ID must have 8 characters, start with '23', and end with a letter." });
+            return res.status(400).send({ message: "Invalid Student ID format!" });
         }
         if (updates.$set.email && !isValidEmail(updates.$set.email)) {
-            return res.status(400).send({ message: "Invalid email format." });
+            return res.status(400).send({ message: "Invalid email format!" });
         }
         if (updates.$set.phoneNumber && !isValidPhoneNumber(updates.$set.phoneNumber)) {
-            return res.status(400).send({ message: "Phone Number must be exactly 8 digits." });
+            return res.status(400).send({ message: "Invalid phone number!" });
         }
 
         // Uniqueness Checks (Only check for changes)
@@ -141,6 +155,7 @@ router.patch("/:id", verifyAdminToken, async (req, res) => {
         }
 
         if (
+            updates.$set.fullName &&
             updates.$set.fullName !== existingMember.fullName &&
             (await isFullNameExists(collection, updates.$set.fullName))
         ) {
@@ -148,10 +163,35 @@ router.patch("/:id", verifyAdminToken, async (req, res) => {
         }
 
         if (
+            updates.$set.nickname &&
             updates.$set.nickname !== existingMember.nickname &&
             (await isNicknameExists(collection, updates.$set.nickname))
         ) {
             return res.status(400).send({ message: "Nickname already exists." });
+        }
+
+        if (
+            updates.$set.studentID &&
+            updates.$set.studentID !== existingMember.studentID &&
+            (await isStudentIDExists(collection, updates.$set.studentID))
+        ) {
+            return res.status(400).send({ message: "Student ID already exists." });
+        }
+
+        if (
+            updates.$set.email &&
+            updates.$set.email !== existingMember.email &&
+            (await isEmailExists(collection, updates.$set.email))
+        ) {
+            return res.status(400).send({ message: "Email already exists." });
+        }
+
+        if (
+            updates.$set.phoneNumber &&
+            updates.$set.phoneNumber !== existingMember.phoneNumber &&
+            (await isPhoneNumberExists(collection, updates.$set.phoneNumber))
+        ) {
+            return res.status(400).send({ message: "Phone Number already exists." });
         }
 
         // Update Member

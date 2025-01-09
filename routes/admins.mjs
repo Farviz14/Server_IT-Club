@@ -9,9 +9,7 @@ dotenv.config();
 const router = express.Router();
 const SECRET_KEY = process.env.SECRET_KEY;
 
-// ======================
-// Admin Registration
-// ======================
+
 router.post("/register", async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -38,9 +36,7 @@ router.post("/register", async (req, res) => {
     }
 });
 
-// ======================
-// Admin Login
-// ======================
+
 router.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
