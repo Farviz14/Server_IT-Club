@@ -48,6 +48,17 @@ const isPhoneNumberExists = async (collection, phoneNumber) => {
 };
 
 
+// Get all members
+router.get("/memberhome", async (req, res) => {
+    try {
+        const collection = await db.collection("members");
+        const results = await collection.find({}).toArray();
+        res.status(200).send({ message: "Members fetched successfully", data: results });
+    } catch (error) {
+        res.status(500).send({ message: "Error fetching members", error });
+    }
+});
+
 
 // Get all members
 router.get("/", verifyAdminToken, async (req, res) => {
